@@ -9,22 +9,14 @@ from __future__ import unicode_literals
 # def index(request):
 #     return HttpResponse("Hello, Fing.")
 
-from django.contrib.auth.models import User, Group
+from students_predictions.models import StudentSurvey
 from rest_framework import viewsets
-from students_predictions.serializers import UserSerializer, GroupSerializer
+from students_predictions.serializers import StudentSurveySerializer
 
 
-class UserViewSet(viewsets.ModelViewSet):
+class StudentSurveyViewSet(viewsets.ModelViewSet):
     """
-    API endpoint that allows users to be viewed or edited.
+    API endpoint that allows students surveys to be viewed or edited.
     """
-    queryset = User.objects.all().order_by('-date_joined')
-    serializer_class = UserSerializer
-
-
-class GroupViewSet(viewsets.ModelViewSet):
-    """
-    API endpoint that allows groups to be viewed or edited.
-    """
-    queryset = Group.objects.all()
-    serializer_class = GroupSerializer
+    queryset = StudentSurvey.objects.all().order_by('-result')
+    serializer_class = StudentSurveySerializer
