@@ -12,6 +12,7 @@ from __future__ import unicode_literals
 from students_predictions.models import StudentSurvey
 from rest_framework import viewsets
 from students_predictions.serializers import StudentSurveySerializer
+from students_predictions.predictions import predict
 
 
 class StudentSurveyViewSet(viewsets.ModelViewSet):
