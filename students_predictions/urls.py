@@ -2,12 +2,7 @@ from django.conf.urls import url, include
 from rest_framework import routers
 from students_predictions import views
 
-router = routers.DefaultRouter()
-router.register(r'students_surveys', views.StudentSurveyViewSet)
-
-# Wire up our API using automatic URL routing.
-# Additionally, we include login URLs for the browsable API.
 urlpatterns = [
-    url('', include(router.urls)),
-    url('api-auth/', include('rest_framework.urls', namespace='rest_framework'))
+    url(r'predict_survey',views.predict_survey,name='predict_survey'),
+    url(r'train_survey',views.train_survey,name='train_survey')
 ]
