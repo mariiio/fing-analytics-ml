@@ -23,3 +23,19 @@ class StudentSurvey(models.Model):
     study_hours = models.CharField(max_length=255)
     motivation_level = models.CharField(max_length=255)
     result = models.CharField(max_length=255)
+
+class CourseResults(models.Model):
+    class Meta:
+      db_table = 'course_results'
+
+    ci = models.CharField(max_length=45)
+    year = models.CharField(max_length=45)
+    name = models.CharField(max_length=45)
+    first_test = models.CharField(max_length=45)
+    second_test = models.CharField(max_length=45)
+    final_result = models.CharField(max_length=45)
+    assignment1 = models.CharField(max_length=45)
+    assignment2 = models.CharField(max_length=45)
+    assignment3 = models.CharField(max_length=45)
+    assignment4 = models.CharField(max_length=45)
+    assignment5 = models.CharField(max_length=45)
