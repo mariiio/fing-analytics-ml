@@ -3,17 +3,11 @@ from sklearn import tree
 import graphviz
 from sklearn import metrics
 import pickle
-from students_predictions.models import StudentSurvey
+from students_predictions.models import StudentSurvey, CourseResults
 
-def mapData(student):
-    return [mapAge(student[3]), mapOrigin(student[4]),
-    mapEducation(student[5]), mapWork(student[6]),
-    mapWorkRelated(student[7]), mapCount(student[8]),
-    mapReTake(student[9]), mapAsistance(student[10]),
-    mapAsistance(student[11]), mapGroup(student[12]),
-    mapTimeDedicated(student[13]), mapMotivation(student[14])]
+# SURVEYS
 
-def mapDataObject(student):
+def mapSurvey(student):
     return [mapAge(student.age), mapOrigin(student.location),
     mapEducation(student.education), mapWork(student.works),
     mapWorkRelated(student.works_related), mapCount(student.semester_subjects_count),
@@ -24,71 +18,117 @@ def mapDataObject(student):
 def mapAge(x):
     return {'25 o más': 2, '21-24 años': 1, '18-20 años': 0}[x.encode("utf8")]
 
-
 def mapOrigin(x):
     return {'Montevideo': 1, 'Interior': 0}[x]
-
 
 def mapEducation(x):
     return {'Privada': 2, 'Pública': 1, 'U.T.U.': 0}[x.encode("utf8")]
 
-
 def mapWork(x):
     return {'Si, Full-Time': 2, 'Si, Part-Time': 1, 'No': 0}[x]
-
 
 def mapWorkRelated(x):
     return {1: 1, 0: 0}[x]
 
-
 def mapCount(x):
     return {5: 4, 4: 3, 3: 2, 2: 1, 1: 0}[x]
-
 
 def mapReTake(x):
     return {'Más de dos': 2, 'Dos': 1, 'Una': 0}[x.encode("utf8")]
 
-
 def mapAsistance(x):
     return {'Sí': 2, 'A veces': 1, 'No': 0}[x.encode("utf8")]
-
 
 def mapGroup(x):
     return {'Solo;En grupo': 2, 'Solo': 1, 'En grupo': 0}[x]
 
-
 def mapTimeDedicated(x):
     return {'3 o menos': 2, 'Entre 3 y 6': 1, '6 o más': 0}[x.encode("utf8")]
-
 
 def mapMotivation(x):
     return {'Bajo': 2, 'Medio': 1, 'Alto': 0}[x]
 
-
 def mapResult(x):
     return {'Recursé': 2, 'Derecho a examen': 1, 'Exoneré': 0}[x.encode("utf8")]
 
-def train():
+def train_survey_model():
   x_train = []
   y_train = []
-  trainData = list(StudentSurvey.objects.values_list())
+  trainData = StudentSurvey.objects.all()
 
-  for row in trainData:
-      x_train.append(mapData(row))
-      y_train.append(mapResult(row[15]))
+  for student in trainData:
+      x_train.append(mapSurvey(student))
+      y_train.append(mapResult(student.result))
 
   classifier = tree.DecisionTreeClassifier(criterion="entropy", max_depth=10)
-  save_model(classifier.fit(x_train, y_train))
+  save_survey_model(classifier.fit(x_train, y_train))
 
-def predict(ci):
+def predict_student_survey(ci):
   student = StudentSurvey.objects.get(ci=ci)
-  return retrieve_model().predict([mapDataObject(student)])
+  return retrieve_survey_model().predict([mapSurvey(student)])
 
-def save_model(classifier):
-  file = open('storedModel', 'w')
+def save_survey_model(classifier):
+  file = open('storedSurveyModel', 'w')
   pickle.dump(classifier, file)
   file.close()
 
-def retrieve_model():
-  file = open('storedModel', 'r')
+def retrieve_survey_model():
+  file = open('storedSurveyModel', 'r')
+  return pickle.load(file)
+
+# COURSE RESULTS
+
+def mapCourse(student):
+    return [mapFirstTest(student.first_test), mapSecondTest(student.second_test),
+    mapAssignment1(student.assignment1), mapAssignment2(student.assignment2),
+    mapAssignment3(student.assignment3), mapAssignment4(student.assignment4),
+    mapAssignment5(student.assignment5)]
+
+def mapFinalResult(x):
+  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
+
+def mapFirstTest(x):
+  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
+
+def mapSecondTest(x):
+  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
+
+def mapAssignment1(x):
+  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+
+def mapAssignment2(x):
+  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+
+def mapAssignment3(x):
+  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+
+def mapAssignment4(x):
+  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+
+def mapAssignment5(x):
+  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+
+def train_course_model():
+  x_train = []
+  y_train = []
+  trainData = CourseResults.objects.all()
+
+  for course_result in trainData:
+      x_train.append(mapCourse(course_result))
+      y_train.append(mapFinalResult(course_result.result))
+
+  classifier = tree.DecisionTreeClassifier(criterion="entropy", max_depth=10)
+  save_survey_model(classifier.fit(x_train, y_train))
+
+def predict_student_course(ci):
+  student = CourseResults.objects.get(ci=ci)
+  return retrieve_survey_model().predict([mapCourse(student)])
+
+def save_course_model(classifier):
+  file = open('storedCourseModel', 'w')
+  pickle.dump(classifier, file)
+  file.close()
+
+def retrieve_course_model():
+  file = open('storedCourseModel', 'r')
   return pickle.load(file)
