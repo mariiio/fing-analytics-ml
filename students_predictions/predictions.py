@@ -79,34 +79,31 @@ def retrieve_survey_model():
 # COURSE RESULTS
 
 def mapCourse(student):
-    return [mapFirstTest(student.first_test), mapSecondTest(student.second_test),
-    mapAssignment1(student.assignment1), mapAssignment2(student.assignment2),
-    mapAssignment3(student.assignment3), mapAssignment4(student.assignment4),
-    mapAssignment5(student.assignment5)]
+    return [mapTest(student.first_test), mapTest(student.second_test),
+    mapAssignment(student.assignment1), mapAssignment(student.assignment2),
+    mapAssignment(student.assignment3), mapAssignment(student.assignment4),
+    mapAssignment(student.assignment5)]
+
+def mapTest(x):
+  if not x or 0 <= int(x) <= 24:
+    return 2
+  elif 25 <= int(x) <= 59:
+    return 1
+  return 0
+
+def mapAssignment(x):
+  if 0 <= int(x) <= 64:
+    return 2
+  elif 65 <= int(x) <= 89:
+    return 1
+  return 0
 
 def mapFinalResult(x):
-  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
-
-def mapFirstTest(x):
-  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
-
-def mapSecondTest(x):
-  return {(0, 24): 0, (25, 59): 1, (60, 100): 2}[int(x)]
-
-def mapAssignment1(x):
-  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
-
-def mapAssignment2(x):
-  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
-
-def mapAssignment3(x):
-  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
-
-def mapAssignment4(x):
-  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
-
-def mapAssignment5(x):
-  return {(0, 64): 0, (66, 89): 1, (90, 100): 2}[int(x)]
+  if 0 <= int(x) <= 2:
+    return 2
+  elif 3 <= int(x) <= 5:
+    return 1
+  return 0
 
 def train_course_model():
   x_train = []
@@ -115,7 +112,7 @@ def train_course_model():
 
   for course_result in trainData:
       x_train.append(mapCourse(course_result))
-      y_train.append(mapFinalResult(course_result.result))
+      y_train.append(mapFinalResult(course_result.final_result))
 
   classifier = tree.DecisionTreeClassifier(criterion="entropy", max_depth=10)
   save_survey_model(classifier.fit(x_train, y_train))
