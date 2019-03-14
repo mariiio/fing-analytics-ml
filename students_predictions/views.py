@@ -9,7 +9,6 @@ from __future__ import unicode_literals
 # def index(request):
 #     return HttpResponse("Hello, Fing.")
 
-from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from students_predictions.models import StudentSurvey, CourseResults
 from students_predictions.predictions import predict_student_survey, train_survey_model, predict_student_course, train_course_model
@@ -17,12 +16,11 @@ from students_predictions.predictions import predict_student_survey, train_surve
 # SURVEY
 def predict_survey(request):
   ci = request.GET.get('ci', None)
-  student_survey = get_object_or_404(StudentSurvey, ci=ci)
 
   data = {
     "result": {
-      "ci": student_survey.ci,
-      "prediction": {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[predict_student_survey(student_survey.ci)[0]]
+      "ci": ci,
+      "prediction": {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[predict_student_survey(ci)[0]]
     }
   }
   return JsonResponse(data)
@@ -34,12 +32,11 @@ def train_survey(request):
 # COURSE
 def predict_course(request):
   ci = request.GET.get('ci', None)
-  course_result = get_object_or_404(CourseResults, ci=ci)
 
   data = {
     "result": {
-      "ci": course_result.ci,
-      "prediction": {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[predict_student_course(course_result.ci)[0]]
+      "ci": ci,
+      "prediction": {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[predict_student_course(ci)[0]]
     }
   }
   return JsonResponse(data)
