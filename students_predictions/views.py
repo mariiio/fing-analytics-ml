@@ -10,7 +10,6 @@ from __future__ import unicode_literals
 #     return HttpResponse("Hello, Fing.")
 
 from django.http import JsonResponse
-from students_predictions.models import StudentSurvey, CourseResults
 from students_predictions.predictions import predict_student_survey, train_survey_model, predict_student_course, train_course_model
 
 # SURVEY

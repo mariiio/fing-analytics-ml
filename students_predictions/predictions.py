@@ -3,7 +3,7 @@ from sklearn import tree
 import graphviz
 from sklearn import metrics
 import pickle
-from students_predictions.models import StudentSurvey, CourseResults
+from students_predictions.models import StudentSurvey, CourseResult
 
 # SURVEYS
 
@@ -79,7 +79,7 @@ def retrieve_survey_model():
 # COURSE RESULTS
 
 def mapCourse(student):
-    return [mapTest(student.first_test), mapTest(student.second_test),
+    return [mapTest(student.test1), mapTest(student.test2),
     mapAssignment(student.assignment1), mapAssignment(student.assignment2),
     mapAssignment(student.assignment3), mapAssignment(student.assignment4),
     mapAssignment(student.assignment5)]
@@ -108,17 +108,37 @@ def mapFinalResult(x):
 def train_course_model():
   x_train = []
   y_train = []
-  trainData = CourseResults.objects.all()
+  trainData = CourseResult.objects.all()
+
+  CourseResult.objects.raw('''SELECT s.Ci AS id, s.Name, c.year,
+                                min(case when t.Title like '%%Primer Parcial%%' then ar.Result else null end) as test1,
+                                min(case when t.Title like "%%Segundo Parcial%%" then ar.Result else null end) as test2,
+                                min(case when a.Title like "%%tarea 1%%" then ar.Result else null end) as assignment1,
+                                min(case when a.Title like "%%tarea 2%%" then ar.Result else null end) as assignment2,
+                                min(case when a.Title like "%%tarea 3%%" then ar.Result else null end) as assignment3,
+                                min(case when a.Title like "%%tarea 4%%" then ar.Result else null end) as assignment4,
+                                min(case when a.Title like "%%tarea 5%%" then ar.Result else null end) as assignment5,
+                                min(case when f.Title like "%%Curso%%" then ar.Result else null end) as final
+                              FROM
+                                course_details cd inner join
+                                  courses c on cd.CourseId = c.Id inner join
+                                  activity_results ar on cd.Id = ar.CourseDetailId inner join
+                                  students s on cd.StudentId = s.Id
+                              LEFT OUTER JOIN tests t on ar.TestId = t.Id
+                              LEFT OUTER JOIN finals f on ar.FinalId = f.Id
+                              LEFT OUTER JOIN assignments a on ar.AssignmentId = a.Id
+                              WHERE cd.CourseId = 1
+                              GROUP BY S.Ci, S.Name, c.year;''')
 
   for course_result in trainData:
       x_train.append(mapCourse(course_result))
-      y_train.append(mapFinalResult(course_result.final_result))
+      y_train.append(mapFinalResult(course_result.final))
 
   classifier = tree.DecisionTreeClassifier(criterion="entropy", max_depth=10)
   save_survey_model(classifier.fit(x_train, y_train))
 
 def predict_student_course(ci):
-  student = CourseResults.objects.get(ci=ci)
+  student = CourseResult.objects.get(ci=ci)
   return retrieve_survey_model().predict([mapCourse(student)])
 
 def save_course_model(classifier):
