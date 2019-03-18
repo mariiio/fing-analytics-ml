@@ -121,9 +121,9 @@ def train_course_model():
                                 min(case when f.Title like "%%Curso%%" then ar.Result else null end) as final
                               FROM
                                 course_details cd inner join
-                                  courses c on cd.CourseId = c.Id inner join
-                                  activity_results ar on cd.Id = ar.CourseDetailId inner join
-                                  students s on cd.StudentId = s.Id
+                                courses c on cd.CourseId = c.Id inner join
+                                activity_results ar on cd.Id = ar.CourseDetailId inner join
+                                students s on cd.StudentId = s.Id
                               LEFT OUTER JOIN tests t on ar.TestId = t.Id
                               LEFT OUTER JOIN finals f on ar.FinalId = f.Id
                               LEFT OUTER JOIN assignments a on ar.AssignmentId = a.Id

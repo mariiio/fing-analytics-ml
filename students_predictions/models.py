@@ -26,7 +26,7 @@ class StudentSurvey(models.Model):
 
 class CourseResult(models.Model):
     ci = models.CharField(max_length=255)
-    year = models.CharField(max_length=255)
+    year = models.IntegerField()
     name = models.CharField(max_length=255)
     test1 = models.CharField(max_length=255)
     test2 = models.CharField(max_length=255)
