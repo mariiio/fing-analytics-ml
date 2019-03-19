@@ -98,6 +98,27 @@ def mapAssignment(x):
     return 1
   return 0
 
+def mapAccessCount(x):
+  if 0 <= int(x) <= 64:
+    return 2
+  elif 65 <= int(x) <= 89:
+    return 1
+  return 0
+
+def mapForumActivityCount(x):
+  if 0 <= int(x) <= 64:
+    return 2
+  elif 65 <= int(x) <= 89:
+    return 1
+  return 0
+
+def mapFileAccessCount(x):
+  if 0 <= int(x) <= 64:
+    return 2
+  elif 65 <= int(x) <= 89:
+    return 1
+  return 0
+
 def mapFinalResult(x):
   if 0 <= int(x) <= 2:
     return 2
@@ -108,38 +129,58 @@ def mapFinalResult(x):
 def train_course_model():
   x_train = []
   y_train = []
-  trainData = CourseResult.objects.all()
-
-  CourseResult.objects.raw('''SELECT s.Ci AS id, s.Name, c.year,
-                                min(case when t.Title like '%%Primer Parcial%%' then ar.Result else null end) as test1,
-                                min(case when t.Title like "%%Segundo Parcial%%" then ar.Result else null end) as test2,
-                                min(case when a.Title like "%%tarea 1%%" then ar.Result else null end) as assignment1,
-                                min(case when a.Title like "%%tarea 2%%" then ar.Result else null end) as assignment2,
-                                min(case when a.Title like "%%tarea 3%%" then ar.Result else null end) as assignment3,
-                                min(case when a.Title like "%%tarea 4%%" then ar.Result else null end) as assignment4,
-                                min(case when a.Title like "%%tarea 5%%" then ar.Result else null end) as assignment5,
-                                min(case when f.Title like "%%Curso%%" then ar.Result else null end) as final
-                              FROM
-                                course_details cd inner join
-                                courses c on cd.CourseId = c.Id inner join
-                                activity_results ar on cd.Id = ar.CourseDetailId inner join
-                                students s on cd.StudentId = s.Id
-                              LEFT OUTER JOIN tests t on ar.TestId = t.Id
-                              LEFT OUTER JOIN finals f on ar.FinalId = f.Id
-                              LEFT OUTER JOIN assignments a on ar.AssignmentId = a.Id
-                              WHERE cd.CourseId = 1
-                              GROUP BY S.Ci, S.Name, c.year;''')
+  trainData = CourseResult.objects.raw('''SELECT d1.Ci as id, d1.Year, d1.AccessCount, d1.ForumActivityCount, d1.SurveyResponseCount,
+                                                d1.FileAccessCount, d2.Test1, d2.Test2, d2.Assignment1, d2.Assignment2,
+                                                d2.Assignment3, d2.Assignment4, d2.Assignment5, d2.Final
+                                          FROM
+                                            (SELECT d.Ci, d.Year,
+                                              max(case when d.Action like "%%ACCESS%%" then d.count else 0 end) as AccessCount,
+                                              max(case when d.Action like "%%FORUM_ACTIVITY%%" then d.count else 0 end) as ForumActivityCount,
+                                              max(case when d.Action like "%%SURVEY_RESPONSE%%" then d.count else 0 end) as SurveyResponseCount,
+                                              max(case when d.Action like "%%FILE_ACCESS%%" then d.count else 0 end) as FileAccessCount
+                                            FROM (
+                                              SELECT s.Ci, l.Action, c.Year, count(*) as count
+                                                FROM logs l
+                                                INNER JOIN course_details cs on l.CourseDetailId = cs.Id
+                                                INNER JOIN students s on cs.StudentId = s.Id
+                                                INNER JOIN courses c on cs.CourseId = c.Id
+                                              WHERE cs.CourseId = 1
+                                              GROUP BY action, s.Ci
+                                            ) d
+                                          GROUP BY Ci, Year) d1
+                                          JOIN
+                                            (SELECT s.Ci, s.Name, c.year as Year,
+                                              min(case when t.Title like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
+                                              min(case when t.Title like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
+                                              min(case when a.Title like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
+                                              min(case when a.Title like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
+                                              min(case when a.Title like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
+                                              min(case when a.Title like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
+                                              min(case when a.Title like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
+                                              min(case when f.Title like "%%Curso%%" then ar.Result else null end) as Final
+                                             FROM
+                                              course_details cd inner join
+                                                courses c ON cd.CourseId = c.Id INNER JOIN
+                                                activity_results ar ON cd.Id = ar.CourseDetailId INNER JOIN
+                                                students s ON cd.StudentId = s.Id
+                                                LEFT OUTER JOIN tests t on ar.TestId = t.Id
+                                                LEFT OUTER JOIN finals f on ar.FinalId = f.Id
+                                                LEFT OUTER JOIN assignments a on ar.AssignmentId = a.Id
+                                            where cd.CourseId = 1
+                                              GROUP BY S.Ci, S.Name, c.year
+                                            ) d2
+                                          ON d1.Ci = d2.Ci AND d1.Year = d2.Year;''')
 
   for course_result in trainData:
       x_train.append(mapCourse(course_result))
       y_train.append(mapFinalResult(course_result.final))
 
   classifier = tree.DecisionTreeClassifier(criterion="entropy", max_depth=10)
-  save_survey_model(classifier.fit(x_train, y_train))
+  save_course_model(classifier.fit(x_train, y_train))
 
 def predict_student_course(ci):
   student = CourseResult.objects.get(ci=ci)
-  return retrieve_survey_model().predict([mapCourse(student)])
+  return retrieve_course_model().predict([mapCourse(student)])
 
 def save_course_model(classifier):
   file = open('storedCourseModel', 'w')

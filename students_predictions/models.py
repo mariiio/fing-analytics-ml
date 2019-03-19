@@ -36,3 +36,7 @@ class CourseResult(models.Model):
     assignment3 = models.CharField(max_length=255)
     assignment4 = models.CharField(max_length=255)
     assignment5 = models.CharField(max_length=255)
+    access_count = models.IntegerField()
+    forum_activity = models.IntegerField()
+    survey_response_count = models.IntegerField()
+    file_access_count = models.IntegerField()
