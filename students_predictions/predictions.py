@@ -150,14 +150,14 @@ def train_course_model():
                                           GROUP BY Ci, Year) d1
                                           JOIN
                                             (SELECT s.Ci, s.Name, c.year as Year,
-                                              min(case when t.Title like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
-                                              min(case when t.Title like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
-                                              min(case when a.Title like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
-                                              min(case when a.Title like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
-                                              min(case when a.Title like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
-                                              min(case when a.Title like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
-                                              min(case when a.Title like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
-                                              min(case when f.Title like "%%Curso%%" then ar.Result else null end) as Final
+                                              min(case when t.Name like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
+                                              min(case when t.Name like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
+                                              min(case when a.Name like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
+                                              min(case when a.Name like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
+                                              min(case when a.Name like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
+                                              min(case when a.Name like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
+                                              min(case when a.Name like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
+                                              min(case when f.Name like "%%Curso%%" then ar.Result else null end) as Final
                                              FROM
                                               course_details cd inner join
                                                 courses c ON cd.CourseId = c.Id INNER JOIN
