@@ -3,12 +3,10 @@ from __future__ import unicode_literals
 
 from django.db import models
 
-# Create your models here.
-class StudentSurvey(models.Model):
-    class Meta:
-      db_table = 'students_surveys'
-
+class Student(models.Model):
     ci = models.CharField(max_length=255)
+    course_detail_id = models.IntegerField()
+    name = models.CharField(max_length=255)
     year = models.IntegerField()
     age = models.CharField(max_length=255)
     location = models.CharField(max_length=255)
@@ -22,12 +20,6 @@ class StudentSurvey(models.Model):
     study_method = models.CharField(max_length=255)
     study_hours = models.CharField(max_length=255)
     motivation_level = models.CharField(max_length=255)
-    result = models.CharField(max_length=255)
-
-class CourseResult(models.Model):
-    ci = models.CharField(max_length=255)
-    year = models.IntegerField()
-    name = models.CharField(max_length=255)
     test1 = models.CharField(max_length=255)
     test2 = models.CharField(max_length=255)
     final = models.CharField(max_length=255)
@@ -40,3 +32,11 @@ class CourseResult(models.Model):
     forum_activity = models.IntegerField()
     survey_response_count = models.IntegerField()
     file_access_count = models.IntegerField()
+    result = models.CharField(max_length=255)
+
+class Prediction(models.Model):
+    class Meta:
+        db_table = 'predictions'
+    CourseDetailId = models.IntegerField()
+    Result = models.CharField(max_length=255)
+    Timestamp = models.DateTimeField()
