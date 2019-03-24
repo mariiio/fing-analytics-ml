@@ -236,7 +236,7 @@ def predict():
   for student in students:
     number = model_number(student)
     model = model_name(number, student)
-    prediction = {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[retrieve_model(model).predict([mapStudent(student, number)])]
+    prediction = {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[retrieve_model(model).predict([mapStudent(student, number)])[0]]
     Prediction(CourseDetailId = student.course_detail_id, Result = prediction, Timestamp = tz.localtime()).save()
 
 def save_model(classifier, model_name):
