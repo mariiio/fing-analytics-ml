@@ -51,7 +51,7 @@ def mapWork(x):
     return {'Si, Full-Time': 2, 'Si, Part-Time': 1, 'No': 0}[x]
 
 def mapWorkRelated(x):
-    return {'Si': 1, 'No': 0, None: 0}[x]
+    return {'Si': 1, 'No': 0, '': 0}[x]
 
 def mapCount(x):
     return {5: 4, 4: 3, 3: 2, 2: 1, 1: 0}[x]
