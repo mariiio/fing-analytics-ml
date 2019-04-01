@@ -5,11 +5,14 @@ from sklearn import metrics
 import pickle
 from students_predictions.models import *
 import django.utils.timezone as tz
+from treebuilder import exportTree
 
 
 def mapStudent(student, model_number):
-    maped_student = [mapAssignment(
-        student.Assignment1), mapAssignment(student.Assignment2)]
+    maped_student = [
+        mapAssignment(student.Assignment1),
+        mapAssignment(student.Assignment2)
+    ]
     if model_number > 1:
         maped_student = maped_student + [mapTest(student.Test1)]
     if model_number > 2:
@@ -19,30 +22,35 @@ def mapStudent(student, model_number):
 
     if has_logs(student):
         maped_student = maped_student + mapLogs(student)
-    if completed_first_survey(student):
-        maped_student = maped_student + mapFirstSurvey(student)
-    if completed_second_survey(student):
-        maped_student = maped_student + mapSecondSurvey(student)
+    if completed_survey(student):
+        maped_student = maped_student + mapSurvey(student)
 
     return maped_student
 
 
 def mapLogs(student):
-    return[mapAccessCount(student.AccessCount), mapForumActivityCount(student.ForumActivityCount),
-           mapFileAccessCount(student.FileAccessCount)]
+    return [
+        mapAccessCount(student.AccessCount),
+        mapForumActivityCount(student.ForumActivityCount),
+        mapFileAccessCount(student.FileAccessCount)
+    ]
 
 
-def mapFirstSurvey(student):
-    return [mapAge(student.Age), mapOrigin(student.Location),
-            mapEducation(student.Education), mapWork(student.Works),
-            mapWorkRelated(student.WorksRelated), mapCount(
-                student.SemesterSubjectsCount),
-            mapReTake(student.CourseTakeCount), mapMotivation(student.MotivationLevel)]
-
-
-def mapSecondSurvey(student):
-    return [mapAsistance(student.AssistsTheoretical), mapAsistance(student.AssistsPractical),
-            mapGroup(student.StudyMethod), mapTimeDedicated(student.StudyHours)]
+def mapSurvey(student):
+    return [
+        mapAge(student.Age),
+        mapOrigin(student.Location),
+        mapEducation(student.Education),
+        mapWork(student.Works),
+        mapWorkRelated(student.WorksRelated),
+        mapCount(student.SemesterSubjectsCount),
+        mapReTake(student.CourseTakeCount),
+        mapMotivation(student.MotivationLevel),
+        mapAsistance(student.AssistsTheoretical),
+        mapAsistance(student.AssistsPractical),
+        mapGroup(student.StudyMethod),
+        mapTimeDedicated(student.StudyHours)
+    ]
 
 
 def mapAge(x):
@@ -62,7 +70,8 @@ def mapWork(x):
 
 
 def mapWorkRelated(x):
-    return {1: 1, 0: 0}[x]
+    print(x)
+    return {'Si': 1, 'No': 0, '': 0}[x]
 
 
 def mapCount(x):
@@ -94,6 +103,7 @@ def mapResult(x):
 
 
 def mapTest(x):
+    return int(x)
     if not x or 0 <= int(x) <= 24:
         return 2
     elif 25 <= int(x) <= 59:
@@ -102,6 +112,7 @@ def mapTest(x):
 
 
 def mapAssignment(x):
+    return int(x)
     if 0 <= int(x) <= 64:
         return 2
     elif 65 <= int(x) <= 89:
@@ -112,6 +123,7 @@ def mapAssignment(x):
 
 
 def mapAccessCount(x):
+    return int(x)
     if 0 <= int(x) <= 64:
         return 2
     elif 65 <= int(x) <= 89:
@@ -120,6 +132,7 @@ def mapAccessCount(x):
 
 
 def mapForumActivityCount(x):
+    return int(x)
     if 0 <= int(x) <= 64:
         return 2
     elif 65 <= int(x) <= 89:
@@ -128,6 +141,7 @@ def mapForumActivityCount(x):
 
 
 def mapFileAccessCount(x):
+    return int(x)
     if 0 <= int(x) <= 64:
         return 2
     elif 65 <= int(x) <= 89:
@@ -191,22 +205,37 @@ def train():
                                     student_surveys s on grades.Id = s.CourseDetailId
                                   where grades.Final is not null and grades.Test1 != "";
                                   ''')
-
+    x_train_dict = {}
+    y_train_dict = {}
+    classifier = tree.DecisionTreeClassifier(
+        criterion="gini", splitter='best', min_samples_leaf=3, max_depth=5)
+    print(x_train_dict)
     for student in students:
-            x_train = []
-            y_train = []
+        for model_number in range(1, 5):
+            modelName = model_name(model_number, student)
 
-            for model_number in range(1, 5):
-                x_train.append(mapStudent(student, model_number))
-                y_train.append(mapFinalResult(student.Final))
-                classifier = tree.DecisionTreeClassifier(criterion="entropy")
-                model = model_name(model_number, student)
-                print "Model " + model
-                print "x_train {0}".format(x_train)
-                print "y_train {0}".format(y_train)
-                save_model(classifier.fit(x_train, y_train), model)
-                x_train = []
-                y_train = []
+            if not x_train_dict.has_key(modelName):
+                x_train_dict[modelName] = [mapStudent(student, model_number)]
+            else:
+                x_train_dict[modelName].append(
+                    mapStudent(student, model_number))
+
+            if not y_train_dict.has_key(modelName):
+                y_train_dict[modelName] = [mapFinalResult(student.Final)]
+            else:
+                y_train_dict[modelName].append(mapFinalResult(student.Final))
+    '''for model_number in range(1, 5):
+        for subindex in range(0, 4):'''
+    for modelName in x_train_dict.keys():
+
+        print "Model " + modelName
+        print "x_train {0}".format(x_train_dict[modelName])
+        print "y_train {0}".format(y_train_dict[modelName])
+        trainModel = x_train_dict[modelName]
+        predictionModel = y_train_dict[modelName]
+        if len(trainModel) > 0:
+            save_model(classifier.fit(trainModel, predictionModel), modelName)
+            exportTree(modelName)
 
 
 def predict():
@@ -293,19 +322,26 @@ def model_name(model_number, student):
     name = 'Model{0}'.format(model_number)
     if has_logs(student):
         name = name + 'Logs'
-    if completed_first_survey(student):
-        name = name + 'FirstSurvey'
-    if completed_second_survey(student):
-        name = name + 'SecondSurvey'
+    if completed_survey(student):
+        name = name + 'Survey'
     return name
 
 
-def completed_first_survey(student):
+def model_subindex(student):
+    hasLogs = has_logs(student)
+    hasSurvey = completed_survey(student)
+    if not hasLogs and not hasSurvey:
+        return 0
+    elif not hasLogs and hasSurvey:
+        return 1
+    elif hasLogs and not hasSurvey:
+        return 2
+    else:
+        return 3
+
+
+def completed_survey(student):
     return student.Age is not None
-
-
-def completed_second_survey(student):
-    return student.AssistsTheoretical is not None
 
 
 def has_logs(student):

@@ -202,8 +202,7 @@ def mapLabels(labels):
 def getFeaturesNames(modelName):
     labels = ['Lab1', 'Lab2']
     hasLogs = re.search('Logs', modelName)
-    hasFirstSurvey = re.search('FirstSurvey', modelName)
-    hasSecondSurvey = re.search('SecondSurvey', modelName)
+    hasSurvey = re.search('Survey', modelName)
     isModel2 = re.search('Model2', modelName)
     isModel3 = re.search('Model3', modelName)
     isModel4 = re.search('Model4', modelName)
@@ -215,12 +214,13 @@ def getFeaturesNames(modelName):
         labels.append('Lab 4')
     if hasLogs:
         labels = labels + ['Accesos', 'Actividad foro', 'Acceso archivos']
-    if hasFirstSurvey:
-        labels = labels + ['Edad', 'Origen', 'Educacion', 'Trabajo',
-                           'Trabajo software', 'Cantidad materias', 'Recursadas', 'Motivacion']
-    if hasSecondSurvey:
-        labels = labels + ['Asistencia teoricos',
-                           'Asistencia practicos', 'Grupo', 'Tiempo dedicado']
+    if hasSurvey:
+        labels = labels + [
+            'Edad', 'Origen', 'Educacion', 'Trabajo',
+            'Trabajo software', 'Cantidad materias', 'Recursadas',
+            'Motivacion', 'Asistencia teoricos', 'Asistencia practicos',
+            'Grupo', 'Tiempo dedicado'
+        ]
     return labels
 
 
