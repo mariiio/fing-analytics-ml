@@ -238,13 +238,16 @@ def predict():
     Prediction(CourseDetailId = student.CourseDetailId, Result = prediction, Timestamp = tz.localtime()).save()
 
 def save_model(classifier, model_name):
-  file = open(model_name, 'w')
+  file = model_file(model_name)
   pickle.dump(classifier, file)
   file.close()
 
 def retrieve_model(model_name):
-  file = open(model_name, 'r')
+  file = model_file(model_name)
   return pickle.load(file)
+
+def model_file(model_name):
+  return open('models_output/' + model_name, 'w')
 
 def model_number(student):
   if student.Assignment4:
