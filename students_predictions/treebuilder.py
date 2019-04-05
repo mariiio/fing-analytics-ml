@@ -196,8 +196,6 @@ def mapLabels(labels):
     newLabels.append(labels[2].replace('class', 'Clase').replace('"', ''))
 
     return newLabels
-# example exportTree(Model1,feature_names=['Edad','Origen','Educacion','Trabajo','Trabajo software','Cantidad materias','Recursadas','Asistencia teoricos','Asistencia practicos','Grupo','Tiempo dedicado','Motivacion'])
-
 
 def getFeaturesNames(modelName):
     labels = ['Lab1', 'Lab2']
@@ -232,19 +230,6 @@ def exportTree(modelName):
     dot_data = tree.export_graphviz(
         clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
-    '''nodes = graphs[0].get_nodes()
-    #for i in range(len(nodes)):
-    #    oldLabel = nodes[i].get('label')
-    #    if oldLabel <> None:
-    #        oldLabelArray = oldLabel.split('\\n')
-    #        print(oldLabelArray)
-    #        result = [a for a in oldLabelArray if not re.search(
-    #            'gini', a) and not re.search('samples', a)]
-            result = mapLabels(result)
-            seperator = '\\n'
-            print('result ==>', result)
-            newLabel = seperator.join(result)
-            label = newLabel.decode('utf-8', "replace")
-            nodes[i].set_label(label)'''
+    
     print graphs
     graphs[0].write_png('models_output/' + modelName + '.png')
