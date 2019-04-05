@@ -178,7 +178,7 @@ def mapRule(r):
 
 
 def retrieve_model(model_name):
-    file = open(model_name, 'r')
+    file = open('models_output/' + model_name, 'r')
     return pickle.load(file)
 
 
@@ -246,4 +246,5 @@ def exportTree(modelName):
             newLabel = seperator.join(result)
             label = newLabel.decode('utf-8', "replace")
             nodes[i].set_label(label)'''
-    graphs[0].write_png(modelName + '.png')
+    print graphs
+    graphs[0].write_png('models_output/' + modelName + '.png')

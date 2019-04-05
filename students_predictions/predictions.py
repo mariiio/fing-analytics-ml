@@ -52,55 +52,41 @@ def mapSurvey(student):
         mapTimeDedicated(student.StudyHours)
     ]
 
-
 def mapAge(x):
     return {'25 o más': 2, '21-24 años': 1, '18-20 años': 0}[x.encode("utf8")]
-
 
 def mapOrigin(x):
     return {'Montevideo': 1, 'Interior': 0}[x]
 
-
 def mapEducation(x):
     return {'Privada': 2, 'Pública': 1, 'U.T.U.': 0}[x.encode("utf8")]
-
 
 def mapWork(x):
     return {'Si, Full-Time': 2, 'Si, Part-Time': 1, 'No': 0}[x]
 
-
 def mapWorkRelated(x):
-    print(x)
     return {'Si': 1, 'No': 0, '': 0}[x]
-
 
 def mapCount(x):
     return {5: 4, 4: 3, 3: 2, 2: 1, 1: 0}[x]
 
-
 def mapReTake(x):
     return {'Más de dos': 2, 'Dos': 1, 'Una': 0}[x.encode("utf8")]
-
 
 def mapAsistance(x):
     return {'Sí': 2, 'A veces': 1, 'No': 0}[x.encode("utf8")]
 
-
 def mapGroup(x):
     return {'Solo;En grupo': 2, 'Solo': 1, 'En grupo': 0}[x]
-
 
 def mapTimeDedicated(x):
     return {'3 o menos': 2, 'Entre 3 y 6': 1, '6 o más': 0}[x.encode("utf8")]
 
-
 def mapMotivation(x):
     return {'Bajo': 2, 'Medio': 1, 'Alto': 0}[x]
 
-
 def mapResult(x):
     return {'Recursé': 2, 'Derecho a examen': 1, 'Exoneré': 0}[x.encode("utf8")]
-
 
 def mapTest(x):
     return int(x)
@@ -110,7 +96,6 @@ def mapTest(x):
         return 1
     return 0
 
-
 def mapAssignment(x):
     return int(x)
     if 0 <= int(x) <= 64:
@@ -119,8 +104,7 @@ def mapAssignment(x):
         return 1
     return 0
 
-# DEFINIR RANGOS
-
+# TODO: DEFINIR RANGOS
 
 def mapAccessCount(x):
     return int(x)
@@ -130,7 +114,6 @@ def mapAccessCount(x):
         return 1
     return 0
 
-
 def mapForumActivityCount(x):
     return int(x)
     if 0 <= int(x) <= 64:
@@ -138,7 +121,6 @@ def mapForumActivityCount(x):
     elif 65 <= int(x) <= 89:
         return 1
     return 0
-
 
 def mapFileAccessCount(x):
     return int(x)
@@ -148,7 +130,6 @@ def mapFileAccessCount(x):
         return 1
     return 0
 
-
 def mapFinalResult(x):
     if 0 <= int(x) <= 2:
         return 2
@@ -156,37 +137,32 @@ def mapFinalResult(x):
         return 1
     return 0
 
-
 def train():
-    baseQuery = model_base_query()  
+    baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is not null")
     
     x_train_dict = {}
     y_train_dict = {}
-    classifier = tree.DecisionTreeClassifier(
-        criterion="gini", splitter='best', min_samples_leaf=3, max_depth=5)
-    print(x_train_dict)
+    classifier = tree.DecisionTreeClassifier(criterion="gini", splitter='best', min_samples_leaf=3, max_depth=5)
+    
     for student in students:
         for model_number in range(1, 5):
             modelName = model_name(model_number, student)
 
-            if not x_train_dict.has_key(modelName):
+            if x_train_dict.has_key(modelName):
+                x_train_dict[modelName].append(mapStudent(student, model_number))
+            else:
                 x_train_dict[modelName] = [mapStudent(student, model_number)]
-            else:
-                x_train_dict[modelName].append(
-                    mapStudent(student, model_number))
 
-            if not y_train_dict.has_key(modelName):
-                y_train_dict[modelName] = [mapFinalResult(student.Final)]
-            else:
+            if y_train_dict.has_key(modelName):
                 y_train_dict[modelName].append(mapFinalResult(student.Final))
-    '''for model_number in range(1, 5):
-        for subindex in range(0, 4):'''
-    for modelName in x_train_dict.keys():
+            else:
+                y_train_dict[modelName] = [mapFinalResult(student.Final)]
 
-        print "Model " + modelName
-        print "x_train {0}".format(x_train_dict[modelName])
-        print "y_train {0}".format(y_train_dict[modelName])
+    for modelName in x_train_dict.keys():
+        print ("Model " + modelName)
+        print ("x_train {0}".format(x_train_dict[modelName]))
+        print ("y_train {0}".format(y_train_dict[modelName]))
         trainModel = x_train_dict[modelName]
         predictionModel = y_train_dict[modelName]
         if len(trainModel) > 0:
@@ -195,16 +171,14 @@ def train():
 
 
 def predict():
-  baseQuery = model_base_query()  
-  students= Student.objects.raw(baseQuery + " and grades.Final is null")  
+    baseQuery = model_base_query()  
+    students = Student.objects.raw(baseQuery + " and grades.Final is null")  
 
     for student in students:
         number = model_number(student)
         model = model_name(number, student)
-        prediction = {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[
-            retrieve_model(model).predict([mapStudent(student, number)])[0]]
-        Prediction(CourseDetailId=student.CourseDetailId,
-                   Result=prediction, Timestamp=tz.localtime()).save()
+        prediction = {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[retrieve_model(model).predict([mapStudent(student, number)])[0]]
+        Prediction(CourseDetailId=student.CourseDetailId, Result=prediction, Timestamp=tz.localtime()).save()
 
 def model_base_query():
   return '''
@@ -260,17 +234,16 @@ def model_base_query():
   '''
 
 def save_model(classifier, model_name):
-  file = model_file(model_name)
-  pickle.dump(classifier, file)
-  file.close()
+    file = model_file(model_name)
+    pickle.dump(classifier, file)
+    file.close()
 
 def retrieve_model(model_name):
-  file = model_file(model_name)
-  return pickle.load(file)
-
+    file = model_file(model_name)
+    return pickle.load(file)
 
 def model_file(model_name):
-  return open('models_output/' + model_name, 'w')
+    return open('models_output/' + model_name, 'w')
 
 def model_number(student):
     if student.Assignment4:
@@ -281,7 +254,6 @@ def model_number(student):
         return 2
     else:
         return 1
-
 
 def model_name(model_number, student):
     name = 'Model{0}'.format(model_number)
@@ -304,10 +276,8 @@ def model_subindex(student):
     else:
         return 3
 
-
 def completed_survey(student):
     return student.Age is not None
-
 
 def has_logs(student):
     return student.AccessCount is not None
