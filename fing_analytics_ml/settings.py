@@ -78,7 +78,7 @@ WSGI_APPLICATION = 'fing_analytics_ml.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'fing',
+        'NAME': 'fing_analytics2',
         'USER': 'root',
         'PASSWORD': '',
         'HOST': 'localhost',   # Or an IP Address that your DB is hosted on

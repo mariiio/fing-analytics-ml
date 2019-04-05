@@ -158,53 +158,9 @@ def mapFinalResult(x):
 
 
 def train():
-    students = Student.objects.raw('''SELECT grades.Id as id, grades.Year,
-                                    student_logs.AccessCount, student_logs.ForumActivityCount, student_logs.SurveyResponseCount, student_logs.FileAccessCount,
-                                      s.Age, s.Location, s.Education,s.Works,s.WorksRelated,s.SemesterSubjectsCount,s.CourseTakeCount,
-                                      s.AssistsTheoretical, s.AssistsPractical, s.StudyMethod, s.StudyHours, s.MotivationLevel,
-                                      grades.Test1, grades.Test2, grades.Assignment1, grades.Assignment2, grades.Assignment3, grades.Assignment4, grades.Assignment5, grades.Final
-                                  from
-                                  (
-                                    select cd.Id, s.Name, c.year as Year,
-                                      min(case when t.Name like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
-                                      min(case when t.Name like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
-                                      min(case when a.Name like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
-                                      min(case when a.Name like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
-                                      min(case when a.Name like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
-                                      min(case when a.Name like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
-                                      min(case when a.Name like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
-                                      min(case when f.Name like "%%Nota Final%%" then ar.Result else null end) as Final
-                                      from
-                                      course_details cd inner join
-                                      courses c on cd.CourseId = c.Id inner join
-                                      activity_results ar on cd.Id = ar.CourseDetailId inner join
-                                      students s on cd.StudentId = s.Id
-                                      left outer join tests t on ar.TestId = t.Id
-                                      left outer join finals f on ar.FinalId = f.Id
-                                      left outer join assignments a on ar.AssignmentId = a.Id
-                                    group by S.Name, c.year, cd.Id
-                                  ) grades
-                                  left outer join
-                                  (
-                                    select log_action.Id, log_action.Year,
-                                    max(case when log_action.Action like "%%ACCESS%%" then log_action.count else 0 end) as AccessCount,
-                                    max(case when log_action.Action like "%%FORUM_ACTIVITY%%" then log_action.count else 0 end) as ForumActivityCount,
-                                    max(case when log_action.Action like "%%SURVEY_RESPONSE%%" then log_action.count else 0 end) as SurveyResponseCount,
-                                    max(case when log_action.Action like "%%FILE_ACCESS%%" then log_action.count else 0 end) as FileAccessCount
-                                    from (
-                                      select cd.Id, l.Action, c.Year, count(*) as count
-                                        from logs l
-                                        inner join course_details cd on l.CourseDetailId = cd.Id
-                                        inner join students s on cd.StudentId = s.Id
-                                        inner join courses c on cd.CourseId = c.Id
-                                      group by action, cd.Id, c.Year
-                                    ) log_action
-                                    group by Id, Year
-                                  ) student_logs on grades.Id = student_logs.Id and grades.Year = student_logs.Year
-                                  left outer join
-                                    student_surveys s on grades.Id = s.CourseDetailId
-                                  where grades.Final is not null and grades.Test1 != "";
-                                  ''')
+    baseQuery = model_base_query()  
+    students = Student.objects.raw(baseQuery + " and grades.Final is not null")
+    
     x_train_dict = {}
     y_train_dict = {}
     classifier = tree.DecisionTreeClassifier(
@@ -239,53 +195,8 @@ def train():
 
 
 def predict():
-    students = Student.objects.raw('''SELECT grades.Id as id, grades.Year,
-                                    student_logs.AccessCount, student_logs.ForumActivityCount, student_logs.SurveyResponseCount, student_logs.FileAccessCount,
-                                      s.Age, s.Location, s.Education,s.Works,s.WorksRelated,s.SemesterSubjectsCount,s.CourseTakeCount,
-                                      s.AssistsTheoretical, s.AssistsPractical, s.StudyMethod, s.StudyHours, s.MotivationLevel,
-                                      grades.Test1, grades.Test2, grades.Assignment1, grades.Assignment2, grades.Assignment3, grades.Assignment4, grades.Assignment5, grades.Final
-                                  from
-                                  (
-                                    select cd.Id, s.Name, c.year as Year,
-                                      min(case when t.Name like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
-                                      min(case when t.Name like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
-                                      min(case when a.Name like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
-                                      min(case when a.Name like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
-                                      min(case when a.Name like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
-                                      min(case when a.Name like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
-                                      min(case when a.Name like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
-                                      min(case when f.Name like "%%Nota Final%%" then ar.Result else null end) as Final
-                                      from
-                                      course_details cd inner join
-                                      courses c on cd.CourseId = c.Id inner join
-                                      activity_results ar on cd.Id = ar.CourseDetailId inner join
-                                      students s on cd.StudentId = s.Id
-                                      left outer join tests t on ar.TestId = t.Id
-                                      left outer join finals f on ar.FinalId = f.Id
-                                      left outer join assignments a on ar.AssignmentId = a.Id
-                                    group by S.Name, c.year, cd.Id
-                                  ) grades
-                                  left outer join
-                                  (
-                                    select log_action.Id, log_action.Year,
-                                    max(case when log_action.Action like "%%ACCESS%%" then log_action.count else 0 end) as AccessCount,
-                                    max(case when log_action.Action like "%%FORUM_ACTIVITY%%" then log_action.count else 0 end) as ForumActivityCount,
-                                    max(case when log_action.Action like "%%SURVEY_RESPONSE%%" then log_action.count else 0 end) as SurveyResponseCount,
-                                    max(case when log_action.Action like "%%FILE_ACCESS%%" then log_action.count else 0 end) as FileAccessCount
-                                    from (
-                                      select cd.Id, l.Action, c.Year, count(*) as count
-                                        from logs l
-                                        inner join course_details cd on l.CourseDetailId = cd.Id
-                                        inner join students s on cd.StudentId = s.Id
-                                        inner join courses c on cd.CourseId = c.Id
-                                      group by action, cd.Id, c.Year
-                                    ) log_action
-                                    group by Id, Year
-                                  ) student_logs on grades.Id = student_logs.Id and grades.Year = student_logs.Year
-                                  left outer join
-                                    student_surveys s on grades.Id = s.CourseDetailId
-                                  where grades.Final is null and grades.Test1 != "";
-                                  ''')
+  baseQuery = model_base_query()  
+  students= Student.objects.raw(baseQuery + " and grades.Final is null")  
 
     for student in students:
         number = model_number(student)
@@ -295,17 +206,71 @@ def predict():
         Prediction(CourseDetailId=student.CourseDetailId,
                    Result=prediction, Timestamp=tz.localtime()).save()
 
+def model_base_query():
+  return '''
+  SELECT grades.Id as id, grades.Year,
+	       student_logs.AccessCount, student_logs.ForumActivityCount, student_logs.SurveyResponseCount, student_logs.FileAccessCount,
+         s.Age, s.Location, s.Education,s.Works,s.WorksRelated,s.SemesterSubjectsCount,s.CourseTakeCount,
+         s.AssistsTheoretical, s.AssistsPractical, s.StudyMethod, s.StudyHours, s.MotivationLevel,
+         grades.Test1, grades.Test2, grades.Assignment1, grades.Assignment2, grades.Assignment3, grades.Assignment4, grades.Assignment5, grades.Final
+  from
+  (
+    select cd.Id, s.Name, c.year as Year,
+      min(case when t.Name like "%%Primer Parcial%%" then ar.Result else null end) as Test1,
+      min(case when t.Name like "%%Segundo Parcial%%" then ar.Result else null end) as Test2,
+      min(case when a.Name like "%%tarea 1%%" then ar.Result else null end) as Assignment1,
+      min(case when a.Name like "%%tarea 2%%" then ar.Result else null end) as Assignment2,
+      min(case when a.Name like "%%tarea 3%%" then ar.Result else null end) as Assignment3,
+      min(case when a.Name like "%%tarea 4%%" then ar.Result else null end) as Assignment4,
+      min(case when a.Name like "%%tarea 5%%" then ar.Result else null end) as Assignment5,
+      min(case when f.Name like "%%Nota Final%%" then ar.Result else null end) as Final
+      from
+      course_details cd inner join
+      courses c on cd.CourseId = c.Id inner join
+      activity_results ar on cd.Id = ar.CourseDetailId inner join
+      students s on cd.StudentId = s.Id
+      left outer join tests t on ar.TestId = t.Id
+      left outer join finals f on ar.FinalId = f.Id
+      left outer join assignments a on ar.AssignmentId = a.Id
+    group by S.Name, c.year, cd.Id
+  ) grades
+  left outer join
+  (
+    select log_action.Id, log_action.Year,
+    max(case when log_action.Action like "%%ACCESS%%" then log_action.count else 0 end) as AccessCount,
+    max(case when log_action.Action like "%%FORUM_ACTIVITY%%" then log_action.count else 0 end) as ForumActivityCount,
+    max(case when log_action.Action like "%%SURVEY_RESPONSE%%" then log_action.count else 0 end) as SurveyResponseCount,
+    max(case when log_action.Action like "%%FILE_ACCESS%%" then log_action.count else 0 end) as FileAccessCount
+    from (
+      select Id, Action, Year, avg(count) as count from (
+        select cd.Id, l.Action, c.Year, WEEKOFYEAR(l.Timestamp) as week, count(*) as count
+          from logs l
+          inner join course_details cd on l.CourseDetailId = cd.Id
+          inner join students s on cd.StudentId = s.Id
+          inner join courses c on cd.CourseId = c.Id
+        group by action, cd.Id, c.Year, week
+        ) week_avg
+      group by Id, Action, Year
+    ) log_action
+    group by Id
+  ) student_logs on grades.Id = student_logs.Id and grades.Year = student_logs.Year
+  left outer join
+    student_surveys s on grades.Id = s.CourseDetailId
+    where grades.Test1 != ""
+  '''
 
 def save_model(classifier, model_name):
-    file = open(model_name, 'w')
-    pickle.dump(classifier, file)
-    file.close()
-
+  file = model_file(model_name)
+  pickle.dump(classifier, file)
+  file.close()
 
 def retrieve_model(model_name):
-    file = open(model_name, 'r')
-    return pickle.load(file)
+  file = model_file(model_name)
+  return pickle.load(file)
 
+
+def model_file(model_name):
+  return open('models_output/' + model_name, 'w')
 
 def model_number(student):
     if student.Assignment4:

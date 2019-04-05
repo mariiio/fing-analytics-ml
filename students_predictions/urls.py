@@ -4,5 +4,6 @@ from students_predictions import views
 
 urlpatterns = [
     url(r'predict_students',views.predict_students,name='predict_students'),
-    url(r'train_models',views.train_models,name='train_models')
+    url(r'train_models',views.train_models,name='train_models'),
+    url(r'model_tree',views.model_tree,name='model_tree')
 ]
