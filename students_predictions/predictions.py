@@ -5,7 +5,8 @@ from sklearn import metrics
 import pickle
 from students_predictions.models import *
 import django.utils.timezone as tz
-from treebuilder import exportTree
+from treebuilder import exportTree, savePredictionTree
+
 
 
 def mapStudent(student, model_number):
@@ -186,11 +187,11 @@ def predict():
             continue
 
         studentMap = mapStudent(student, modelNumber)
-        prediction = modelFile.predict([studentMap])
-        predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction[0]]    
+        prediction = modelFile.predict([studentMap])[0]
+        predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
 
         Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
-        # TODO guardar arbol
+        savePredictionTree(student.id, [studentMap], modelName, prediction)
 
 def model_base_query():
   return '''

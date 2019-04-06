@@ -225,11 +225,11 @@ def getFeaturesNames(modelName):
 
 def getPredictedColor(x):
     if x == 0:
-        return 'Green'
+        return 'green'
     if x == 1:
-        return 'Yellow'
+        return 'yellow'
     if x == 2:
-        return 'Red'
+        return 'red'
 
 
 def exportTree(modelName):
@@ -258,19 +258,19 @@ def exportTree(modelName):
 
 def savePredictionTree(studentId, studentMapped, modelName, prediction):
     model = retrieve_model(modelName)
-    dot_data = tree.export_graphviz(model, proportion='true', out_file=None, feature_names=getFeaturesNames(
-        modelName), rounded=True)
+    dot_data = tree.export_graphviz(model, proportion='true', out_file=None, feature_names=getFeaturesNames(modelName), filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
     nodes = graphs[0].get_nodes()
     predictedColor = getPredictedColor(prediction)
     node_indicator = model.decision_path(studentMapped)
     decision_path = node_indicator.toarray()[0]
+    print(decision_path)
     for node in nodes:
         name = node.get_name()
         if name <> 'node' and name <> 'edge':
             index = int(node.get_name())
-            nodes.set_fillcolor('#f5f5dc')
-        if index < len(decision_path) and decision_path[index] > 0:
-            node.set_fillcolor(predictedColor)
-    graphs[0].write_png(
-        'models_output/{0}_predictionTree.png').format(studentId)
+            node.set_fillcolor('#f5f5dc')
+            if index < len(decision_path) and decision_path[index] > 0:                                
+              node.set_fillcolor(predictedColor)
+              
+    graphs[0].write_png('models_output/' + str(studentId) + '_predictionTree.png')
