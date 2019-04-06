@@ -183,19 +183,19 @@ def retrieve_model(model_name):
 
 
 def mapLabels(labels):
-    print('map labels with', labels)
     isLeaf = re.search('value', labels[0])
-    if isLeaf:
+    if isLeaf and len(labels) > 1:
         newLabels = []
         newLabels.append(labels[0].replace('value', 'P'))
         newLabels.append(labels[1].replace('class', 'Clase').replace('"', ''))
         return newLabels
-    newLabels = []
-    newLabels.append(mapRule(labels[0]).replace('"', ''))
-    newLabels.append(labels[1].replace('value', 'P'))
-    newLabels.append(labels[2].replace('class', 'Clase').replace('"', ''))
-
-    return newLabels
+    if len(labels) > 2:
+        newLabels = []
+        newLabels.append(mapRule(labels[0]).replace('"', ''))
+        newLabels.append(labels[1].replace('value', 'P'))
+        newLabels.append(labels[2].replace('class', 'Clase').replace('"', ''))
+        return newLabels
+    return labels
 
 
 def getFeaturesNames(modelName):
@@ -239,8 +239,20 @@ def exportTree(modelName):
     dot_data = tree.export_graphviz(
         clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
-
-    print graphs
+    nodes = graphs[0].get_nodes()
+    if len(nodes) > 2:
+        for i in range(len(nodes)):
+            oldLabel = nodes[i].get('label')
+            if oldLabel <> None:
+                oldLabelArray = oldLabel.split('\\n')
+                result = [a for a in oldLabelArray if not re.search(
+                    'gini', a) and not re.search('samples', a)]
+                result = mapLabels(result)
+                seperator = '\\n'
+                newLabel = seperator.join(result)
+                label = newLabel.decode('utf-8', "replace")
+                nodes[i].set_fillcolor('#f5f5dc')
+                nodes[i].set_label(label)
     graphs[0].write_png('models_output/' + modelName + '.png')
 
 
