@@ -1,3 +1,5 @@
 *.pyc
 
 models_output/
+
+!models_output/.gitkeep
