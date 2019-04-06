@@ -232,14 +232,7 @@ def getPredictedColor(x):
         return 'red'
 
 
-def exportTree(modelName):
-    clf = retrieve_model(modelName)
-    featuresNames = getFeaturesNames(modelName)
-    print(featuresNames)
-    dot_data = tree.export_graphviz(
-        clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
-    graphs = pydot.graph_from_dot_data(dot_data)
-    nodes = graphs[0].get_nodes()
+def formatTree(nodes):
     if len(nodes) > 2:
         for i in range(len(nodes)):
             oldLabel = nodes[i].get('label')
@@ -253,14 +246,27 @@ def exportTree(modelName):
                 label = newLabel.decode('utf-8', "replace")
                 nodes[i].set_fillcolor('#f5f5dc')
                 nodes[i].set_label(label)
+
+
+def exportTree(modelName):
+    clf = retrieve_model(modelName)
+    featuresNames = getFeaturesNames(modelName)
+    print(featuresNames)
+    dot_data = tree.export_graphviz(
+        clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
+    graphs = pydot.graph_from_dot_data(dot_data)
+    nodes = graphs[0].get_nodes()
+    formatTree(nodes)
     graphs[0].write_png('models_output/' + modelName + '.png')
 
 
 def savePredictionTree(studentId, studentMapped, modelName, prediction):
     model = retrieve_model(modelName)
-    dot_data = tree.export_graphviz(model, proportion='true', out_file=None, feature_names=getFeaturesNames(modelName), filled=True, rounded=True)
+    dot_data = tree.export_graphviz(model, proportion='true', out_file=None,
+                                    feature_names=getFeaturesNames(modelName), class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
     nodes = graphs[0].get_nodes()
+    formatTree(nodes)
     predictedColor = getPredictedColor(prediction)
     node_indicator = model.decision_path(studentMapped)
     decision_path = node_indicator.toarray()[0]
@@ -269,8 +275,7 @@ def savePredictionTree(studentId, studentMapped, modelName, prediction):
         name = node.get_name()
         if name <> 'node' and name <> 'edge':
             index = int(node.get_name())
-            node.set_fillcolor('#f5f5dc')
-            if index < len(decision_path) and decision_path[index] > 0:                                
-              node.set_fillcolor(predictedColor)
-              
-    graphs[0].write_png('models_output/' + str(studentId) + '_predictionTree.png')
+            if index < len(decision_path) and decision_path[index] > 0:
+                node.set_fillcolor(predictedColor)
+    graphs[0].write_png('models_output/' +
+                        str(studentId) + '_predictionTree.png')
