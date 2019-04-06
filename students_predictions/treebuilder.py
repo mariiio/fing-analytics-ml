@@ -263,7 +263,7 @@ def exportTree(modelName):
 def savePredictionTree(studentId, studentMapped, modelName, prediction):
     model = retrieve_model(modelName)
     dot_data = tree.export_graphviz(model, proportion='true', out_file=None,
-                                    feature_names=getFeaturesNames(modelName), filled=True, rounded=True)
+                                    feature_names=getFeaturesNames(modelName), class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
     nodes = graphs[0].get_nodes()
     formatTree(nodes)
