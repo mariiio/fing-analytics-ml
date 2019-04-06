@@ -173,20 +173,13 @@ def train():
         if len(trainModel) > 0:
             save_model(classifier.fit(trainModel, predictionModel), modelName)
             exportTree(modelName)
-
-
-def howmany_within_range(row, minimum, maximum):
-    """Returns how many numbers lie within `maximum` and `minimum` in a given `row`"""
-    count = 0
-    for n in row:
-        if minimum <= n <= maximum:
-            count = count + 1
-    return count
+            print("Model " + modelName  + " trained succesfully")
 
 def predict():
     baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is null")
     
+    # Create pool
     c = mp.cpu_count()
     pool = mp.Pool(c)
 
@@ -212,7 +205,7 @@ def predictStudent(student):
 
     Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
     savePredictionTree(student.id, [studentMap], modelName, prediction)
-    print("PredictStudent " + student.id + " finished.")
+    print("Student " + str(student.id) + " predicted succesfully.")
 
 def model_base_query():
   return '''
