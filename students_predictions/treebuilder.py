@@ -171,8 +171,7 @@ def mapRule(r):
         conditions = []
         for x in getValues(op, value):
             conditions.append(mapMotivationInv(x))
-        seperator = ' o '
-        print(conditions)
+        seperator = ' o '    
         return 'Motivacion = ' + seperator.join(conditions)
     return r
 
@@ -251,7 +250,6 @@ def formatTree(nodes):
 def exportTree(modelName):
     clf = retrieve_model(modelName)
     featuresNames = getFeaturesNames(modelName)
-    print(featuresNames)
     dot_data = tree.export_graphviz(
         clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
@@ -269,8 +267,7 @@ def savePredictionTree(studentId, studentMapped, modelName, prediction):
     formatTree(nodes)
     predictedColor = getPredictedColor(prediction)
     node_indicator = model.decision_path(studentMapped)
-    decision_path = node_indicator.toarray()[0]
-    print(decision_path)
+    decision_path = node_indicator.toarray()[0]    
     for node in nodes:
         name = node.get_name()
         if name <> 'node' and name <> 'edge':

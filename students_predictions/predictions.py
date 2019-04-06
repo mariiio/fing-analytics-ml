@@ -212,6 +212,7 @@ def predictStudent(student):
 
     Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
     savePredictionTree(student.id, [studentMap], modelName, prediction)
+    print("PredictStudent " + student.id + " finished.")
 
 def model_base_query():
   return '''

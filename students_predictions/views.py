@@ -12,7 +12,21 @@ def predict_students(request):
   return JsonResponse({"message": "The predictions are ready"})
 
 def model_tree(request):
-  model = request.GET.get('model', 'error')
-  tree_path = "{0}.png".format(model)
-  image_data = open(tree_path, "rb").read()
+  courseDetailId = request.GET.get('student')
+  modelName = request.GET.get('model')
+  errorPath = "assets/no_image.png"
+
+  filePath = ""
+  if courseDetailId is not None:
+    filePath = "models_output/{0}_predictionTree.png".format(courseDetailId)
+  elif modelName is not None:
+    filePath = "models_output/{0}.png".format(modelName)
+  else:
+    filePath = errorPath
+
+  try:
+    image_data = open(filePath, "rb").read()
+  except:
+    image_data = open(errorPath, "rb").read()
+  
   return HttpResponse(image_data, content_type="image/png")
