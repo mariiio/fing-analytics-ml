@@ -5,7 +5,8 @@ from sklearn import metrics
 import pickle
 from students_predictions.models import *
 import django.utils.timezone as tz
-from treebuilder import exportTree
+from treebuilder import exportTree, savePredictionTree
+
 
 
 def mapStudent(student, model_number):
@@ -71,7 +72,7 @@ def mapCount(x):
     return {5: 4, 4: 3, 3: 2, 2: 1, 1: 0}[x]
 
 def mapReTake(x):
-    return {'Más de dos': 2, 'Dos': 1, 'Una': 0}[x.encode("utf8")]
+    return {'Más de dos': 3, 'Dos': 2, 'Una': 1, '': 0}[x.encode("utf8")]
 
 def mapAsistance(x):
     return {'Sí': 2, 'A veces': 1, 'No': 0}[x.encode("utf8")]
@@ -89,6 +90,8 @@ def mapResult(x):
     return {'Recursé': 2, 'Derecho a examen': 1, 'Exoneré': 0}[x.encode("utf8")]
 
 def mapTest(x):
+    if x == '':
+        return 0
     return int(x)
     if not x or 0 <= int(x) <= 24:
         return 2
@@ -97,6 +100,8 @@ def mapTest(x):
     return 0
 
 def mapAssignment(x):
+    if x == '':
+        return 0
     return int(x)
     if 0 <= int(x) <= 64:
         return 2
@@ -149,20 +154,19 @@ def train():
         for model_number in range(1, 5):
             modelName = model_name(model_number, student)
 
+            studentMap = mapStudent(student, model_number)
             if x_train_dict.has_key(modelName):
-                x_train_dict[modelName].append(mapStudent(student, model_number))
+                x_train_dict[modelName].append(studentMap)
             else:
-                x_train_dict[modelName] = [mapStudent(student, model_number)]
+                x_train_dict[modelName] = [studentMap]
 
+            resultMap = mapFinalResult(student.Final)
             if y_train_dict.has_key(modelName):
-                y_train_dict[modelName].append(mapFinalResult(student.Final))
+                y_train_dict[modelName].append(resultMap)
             else:
-                y_train_dict[modelName] = [mapFinalResult(student.Final)]
+                y_train_dict[modelName] = [resultMap]
 
     for modelName in x_train_dict.keys():
-        print ("Model " + modelName)
-        print ("x_train {0}".format(x_train_dict[modelName]))
-        print ("y_train {0}".format(y_train_dict[modelName]))
         trainModel = x_train_dict[modelName]
         predictionModel = y_train_dict[modelName]
         if len(trainModel) > 0:
@@ -171,18 +175,27 @@ def train():
 
 
 def predict():
-    baseQuery = model_base_query()  
-    students = Student.objects.raw(baseQuery + " and grades.Final is null")  
+    baseQuery = model_base_query()
+    students = Student.objects.raw(baseQuery + " and grades.Final is null")
 
     for student in students:
-        number = model_number(student)
-        model = model_name(number, student)
-        prediction = {2: 'Recursa', 1: 'Derecho a examen', 0: 'Exonera'}[retrieve_model(model).predict([mapStudent(student, number)])[0]]
-        Prediction(CourseDetailId=student.CourseDetailId, Result=prediction, Timestamp=tz.localtime()).save()
+        modelNumber = model_number(student)
+        modelName = model_name(modelNumber, student)
+        modelFile = retrieve_model(modelName)
+        
+        if modelFile is None:
+            continue
+
+        studentMap = mapStudent(student, modelNumber)
+        prediction = modelFile.predict([studentMap])[0]
+        predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
+
+        Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
+        savePredictionTree(student.id, [studentMap], modelName, prediction)
 
 def model_base_query():
   return '''
-  SELECT grades.Id as id, grades.Year,
+  SELECT distinct(grades.Id) as id, grades.Year,
 	       student_logs.AccessCount, student_logs.ForumActivityCount, student_logs.SurveyResponseCount, student_logs.FileAccessCount,
          s.Age, s.Location, s.Education,s.Works,s.WorksRelated,s.SemesterSubjectsCount,s.CourseTakeCount,
          s.AssistsTheoretical, s.AssistsPractical, s.StudyMethod, s.StudyHours, s.MotivationLevel,
@@ -230,27 +243,27 @@ def model_base_query():
   ) student_logs on grades.Id = student_logs.Id and grades.Year = student_logs.Year
   left outer join
     student_surveys s on grades.Id = s.CourseDetailId
-    where grades.Test1 != ""
+    where grades.Assignment2 != ""
   '''
 
 def save_model(classifier, model_name):
-    file = model_file(model_name)
+    file = open('models_output/' + model_name, 'w')
     pickle.dump(classifier, file)
     file.close()
 
 def retrieve_model(model_name):
-    file = model_file(model_name)
-    return pickle.load(file)
-
-def model_file(model_name):
-    return open('models_output/' + model_name, 'w')
+    try:
+        file = open('models_output/' + model_name, 'r')
+        return pickle.load(file)
+    except:
+        return None
 
 def model_number(student):
     if student.Assignment4:
         return 4
     elif student.Assignment3:
         return 3
-    elif Test1:
+    elif student.Test1:
         return 2
     else:
         return 1
