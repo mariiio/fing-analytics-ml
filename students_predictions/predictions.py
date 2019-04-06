@@ -5,16 +5,10 @@ import django.utils.timezone as tz
 
 from joblib import Parallel, delayed
 import multiprocessing as mp
-import threading
-
-import numpy as np
-from time import time
-
 
 from sklearn import tree, metrics
 from students_predictions.models import *
 from treebuilder import exportTree, savePredictionTree
-
 
 def mapStudent(student, model_number):
     maped_student = [
@@ -192,48 +186,32 @@ def howmany_within_range(row, minimum, maximum):
 def predict():
     baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is null")
-
-    start = time()
-
-    # Step 1: Init multiprocessing.Pool()
+    
     c = mp.cpu_count()
-    print (c)
     pool = mp.Pool(c)
-    print(pool)
-    # Step 2: `pool.apply` the `howmany_within_range()`
+
+    # Call parallel for
     results = [pool.apply_async(predictStudent, args=(student,)) for student in students]
 
-    # Step 3: Don't forget to close
+    # Wait for all threads to finish
     pool.close()
     pool.join()
 
 
-    print(results[:10])
-    
-    end = time()
-
-    rounded_end = ('{0:.4f}'.format(round(end-start,4)))
-    print('Tiempo de ejecucion:', str(rounded_end), 'segundos')
-
-
 def predictStudent(student):
-    print("predict start! " + str(student.id))
     modelNumber = model_number(student)
     modelName = model_name(modelNumber, student)
     modelFile = retrieve_model(modelName)
     
     if modelFile is None:
-        return "No Model Found"
+        return
 
     studentMap = mapStudent(student, modelNumber)
     prediction = modelFile.predict([studentMap])[0]
     predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
 
     Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
-    # savePredictionTree(student.id, [studentMap], modelName, prediction)
-
-    print("predict finish! " + str(student.id))
-    return "OK!"
+    savePredictionTree(student.id, [studentMap], modelName, prediction)
 
 def model_base_query():
   return '''
