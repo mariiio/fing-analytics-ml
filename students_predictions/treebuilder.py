@@ -243,11 +243,11 @@ def getFeaturesNames(modelName):
 
 def getPredictedColor(x):
     if x == 0:
-        return 'green'
+        return '#98fb98'
     if x == 1:
         return 'yellow'
     if x == 2:
-        return 'red'
+        return '#FF5050'
 
 
 def formatTree(nodes):
