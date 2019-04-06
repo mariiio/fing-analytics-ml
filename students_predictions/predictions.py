@@ -1,13 +1,14 @@
 # -*- coding: utf-8 -*-
-from sklearn import tree
 import graphviz
-from sklearn import metrics
 import pickle
-from students_predictions.models import *
 import django.utils.timezone as tz
+
+from joblib import Parallel, delayed
+import multiprocessing as mp
+
+from sklearn import tree, metrics
+from students_predictions.models import *
 from treebuilder import exportTree, savePredictionTree
-
-
 
 def mapStudent(student, model_number):
     maped_student = [
@@ -172,26 +173,39 @@ def train():
         if len(trainModel) > 0:
             save_model(classifier.fit(trainModel, predictionModel), modelName)
             exportTree(modelName)
-
+            print("Model " + modelName  + " trained succesfully")
 
 def predict():
     baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is null")
+    
+    # Create pool
+    c = mp.cpu_count()
+    pool = mp.Pool(c)
 
-    for student in students:
-        modelNumber = model_number(student)
-        modelName = model_name(modelNumber, student)
-        modelFile = retrieve_model(modelName)
-        
-        if modelFile is None:
-            continue
+    # Call parallel for
+    results = [pool.apply_async(predictStudent, args=(student,)) for student in students]
 
-        studentMap = mapStudent(student, modelNumber)
-        prediction = modelFile.predict([studentMap])[0]
-        predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
+    # Wait for all threads to finish
+    pool.close()
+    pool.join()
 
-        Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
-        savePredictionTree(student.id, [studentMap], modelName, prediction)
+
+def predictStudent(student):
+    modelNumber = model_number(student)
+    modelName = model_name(modelNumber, student)
+    modelFile = retrieve_model(modelName)
+    
+    if modelFile is None:
+        return
+
+    studentMap = mapStudent(student, modelNumber)
+    prediction = modelFile.predict([studentMap])[0]
+    predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
+
+    Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
+    savePredictionTree(student.id, [studentMap], modelName, prediction)
+    print("Student " + str(student.id) + " predicted succesfully.")
 
 def model_base_query():
   return '''
