@@ -211,7 +211,7 @@ def mapLabels(labels):
     if len(labels) > 2:
         newLabels = []
         newLabels.append(mapRule(labels[0]).replace('"', ''))
-        newLabels + getProbsLabels(getProbs(labels[1]))
+        newLabels = newLabels + getProbsLabels(getProbs(labels[1]))
         return newLabels
     return labels
 
