@@ -197,6 +197,7 @@ def mapLabels(labels):
 
     return newLabels
 
+
 def getFeaturesNames(modelName):
     labels = ['Lab1', 'Lab2']
     hasLogs = re.search('Logs', modelName)
@@ -222,14 +223,42 @@ def getFeaturesNames(modelName):
     return labels
 
 
+def getPredictedColor(x):
+    if x == 0:
+        return 'Green'
+    if x == 1:
+        return 'Yellow'
+    if x == 2:
+        return 'Red'
+
+
 def exportTree(modelName):
     clf = retrieve_model(modelName)
-    print(clf)
     featuresNames = getFeaturesNames(modelName)
     print(featuresNames)
     dot_data = tree.export_graphviz(
         clf, proportion='true', out_file=None, feature_names=featuresNames, class_names=['Exonera', 'Derecho a examen', 'Recursa'], filled=True, rounded=True)
     graphs = pydot.graph_from_dot_data(dot_data)
-    
+
     print graphs
     graphs[0].write_png('models_output/' + modelName + '.png')
+
+
+def savePredictionTree(studentId, studentMapped, modelName, prediction):
+    model = retrieve_model(modelName)
+    dot_data = tree.export_graphviz(model, proportion='true', out_file=None, feature_names=getFeaturesNames(
+        modelName), rounded=True)
+    graphs = pydot.graph_from_dot_data(dot_data)
+    nodes = graphs[0].get_nodes()
+    predictedColor = getPredictedColor(prediction)
+    node_indicator = model.decision_path(studentMapped)
+    decision_path = node_indicator.toarray()[0]
+    for node in nodes:
+        name = node.get_name()
+        if name <> 'node' and name <> 'edge':
+            index = int(node.get_name())
+            nodes.set_fillcolor('#f5f5dc')
+        if index < len(decision_path) and decision_path[index] > 0:
+            node.set_fillcolor(predictedColor)
+    graphs[0].write_png(
+        'models_output/{0}_predictionTree.png').format(studentId)
