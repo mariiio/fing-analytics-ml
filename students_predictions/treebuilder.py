@@ -188,7 +188,6 @@ def getProbs(label):
     newProbs = []
     for p in probs:
         newProbs.append(str(float(p) * 100) + '%')
-    print('probs ==> ', newProbs)
     return newProbs
 
 
