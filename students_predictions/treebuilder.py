@@ -65,7 +65,7 @@ def mapWorkRelatedInv(x):
 
 
 def mapCount(x):
-    return {5: 4, 4: 3, 3: 2, 2: 1, 1: 0}[x]
+    return x
 
 
 def mapReTake(x):
@@ -181,18 +181,37 @@ def retrieve_model(model_name):
     return pickle.load(file)
 
 
+def getProbs(label):
+    probs = label.replace('value =', '').replace(
+        '[', '').replace(']', '').split(',')
+    newProbs = []
+    for p in probs:
+        newProbs.append(str(float(p) * 100) + '%')
+    return newProbs
+
+
+def getProbsLabels(probs):
+    newLabels = []
+    p1 = probs[0]
+    p2 = probs[1]
+    p3 = probs[2]
+    if p1 <> '0.0%':
+        newLabels.append('Exonera: ' + probs[0])
+    if p2 <> '0.0%':
+        newLabels.append('Examen: ' + probs[1])
+    if p3 <> '0.0%':
+        newLabels.append('Recursa: ' + probs[2])
+    return newLabels
+
+
 def mapLabels(labels):
     isLeaf = re.search('value', labels[0])
     if isLeaf and len(labels) > 1:
-        newLabels = []
-        newLabels.append(labels[0].replace('value', 'P'))
-        newLabels.append(labels[1].replace('class', 'Clase').replace('"', ''))
-        return newLabels
+        return getProbsLabels(getProbs(labels[0]))
     if len(labels) > 2:
         newLabels = []
         newLabels.append(mapRule(labels[0]).replace('"', ''))
-        newLabels.append(labels[1].replace('value', 'P'))
-        newLabels.append(labels[2].replace('class', 'Clase').replace('"', ''))
+        newLabels + getProbsLabels(getProbs(labels[1]))
         return newLabels
     return labels
 
