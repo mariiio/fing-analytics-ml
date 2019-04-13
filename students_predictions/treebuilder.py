@@ -8,7 +8,7 @@ import django.utils.timezone as tz
 import re
 from pydot import Dot, Edge
 import pydot
-
+import os
 
 def getValues(symbol, value):
     j = range(int(float(value))+1)
@@ -180,6 +180,19 @@ def retrieve_model(model_name):
     file = open('models_output/' + model_name, 'r')
     return pickle.load(file)
 
+def mapLabels(labels):
+    isLeaf = re.search('value', labels[0])
+    if isLeaf and len(labels) > 1:
+        labelProbs = getProbs(labels[0])
+        return getProbsLabels(labelProbs)
+    if len(labels) > 2:
+        newLabels = []
+        newLabels.append(mapRule(labels[0]).replace('"', ''))
+        
+        labelProbs = getProbs(labels[1])
+        newLabels = newLabels + getProbsLabels(labelProbs)
+        return newLabels
+    return labels
 
 def getProbs(label):
     probs = label.replace('value =', '').replace(
@@ -189,32 +202,15 @@ def getProbs(label):
         newProbs.append(str(float(p) * 100) + '%')
     return newProbs
 
-
-def getProbsLabels(probs):
-    newLabels = []
-    p1 = probs[0]
-    p2 = probs[1]
-    p3 = probs[2]
-    if p1 <> '0.0%':
-        newLabels.append('Exonera: ' + probs[0])
-    if p2 <> '0.0%':
-        newLabels.append('Examen: ' + probs[1])
-    if p3 <> '0.0%':
-        newLabels.append('Recursa: ' + probs[2])
-    return newLabels
-
-
-def mapLabels(labels):
-    isLeaf = re.search('value', labels[0])
-    if isLeaf and len(labels) > 1:
-        return getProbsLabels(getProbs(labels[0]))
-    if len(labels) > 2:
-        newLabels = []
-        newLabels.append(mapRule(labels[0]).replace('"', ''))
-        newLabels = newLabels + getProbsLabels(getProbs(labels[1]))
-        return newLabels
+def getProbsLabels(probsList):
+    labels = []
+    if len(probsList) > 0 and probsList[0] <> '0.0%':
+        labels.append('Exonera: ' + probsList[0])
+    if len(probsList) > 1 and probsList[1] <> '0.0%':
+        labels.append('Examen: ' + probsList[1])
+    if len(probsList) > 2 and probsList[2] <> '0.0%':
+        labels.append('Recursa: ' + probsList[2])
     return labels
-
 
 def getFeaturesNames(modelName):
     labels = ['Lab1', 'Lab2']
@@ -293,5 +289,11 @@ def savePredictionTree(studentId, studentMapped, modelName, prediction):
             index = int(node.get_name())
             if index < len(decision_path) and decision_path[index] > 0:
                 node.set_fillcolor(predictedColor)
-    graphs[0].write_png('models_output/' +
-                        str(studentId) + '_predictionTree.png')
+    graphs[0].write_png('models_output/' + str(studentId) + '_predictionTree.png')
+
+def deletePredictionTree(courseDetailId):
+    filePath = 'models_output/' + str(courseDetailId) + '_predictionTree.png'
+    if os.path.exists(filePath):
+        print "Remove file " + filePath
+        os.remove(filePath)
+

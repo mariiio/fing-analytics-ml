@@ -1,5 +1,7 @@
 *.pyc
+*.env
+
+.DS_Store
 
 models_output/
-
 !models_output/.gitkeep
