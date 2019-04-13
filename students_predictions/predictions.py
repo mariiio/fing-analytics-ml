@@ -152,7 +152,7 @@ def train():
     
     x_train_dict = {}
     y_train_dict = {}
-    classifier = tree.DecisionTreeClassifier(criterion="gini", splitter='best', min_samples_leaf=3, max_depth=5)
+    classifier = tree.DecisionTreeClassifier(criterion="gini", splitter='random', min_samples_leaf=3, max_depth=5)
     
     for student in students:
         for model_number in range(1, 5):
