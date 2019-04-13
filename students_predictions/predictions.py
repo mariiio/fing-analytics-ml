@@ -1,14 +1,17 @@
 # -*- coding: utf-8 -*-
 import graphviz
 import pickle
+import os
 import django.utils.timezone as tz
 
 from joblib import Parallel, delayed
 import multiprocessing as mp
 
+from django.http import JsonResponse, HttpResponse
+
 from sklearn import tree, metrics
 from students_predictions.models import *
-from treebuilder import exportTree, savePredictionTree
+from treebuilder import exportTree, savePredictionTree, deletePredictionTree
 
 def mapStudent(student, model_number):
     maped_student = [
@@ -184,14 +187,20 @@ def predict():
     pool = mp.Pool(c)
 
     # Call parallel for
-    results = [pool.apply_async(predictStudent, args=(student,)) for student in students]
+    results = [pool.apply_async(saveStudentPrediction, args=(student,)) for student in students]
 
     # Wait for all threads to finish
     pool.close()
     pool.join()
 
+def fetchStudentData(courseDetailId):
+    baseQuery = model_base_query()
+    student = Student.objects.raw(baseQuery + " and grades.Id = " + courseDetailId)
+    if len(list(student)) == 0:
+        return None
+    return student[0]
 
-def predictStudent(student):
+def saveStudentPrediction(student):    
     modelNumber = model_number(student)
     modelName = model_name(modelNumber, student)
     modelFile = retrieve_model(modelName)
@@ -201,11 +210,26 @@ def predictStudent(student):
 
     studentMap = mapStudent(student, modelNumber)
     prediction = modelFile.predict([studentMap])[0]
-    predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]    
+    predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]
 
     Prediction(CourseDetailId=student.id, Result=predictionResult, Timestamp=tz.localtime()).save()
-    savePredictionTree(student.id, [studentMap], modelName, prediction)
+    
+    deletePredictionTree(student.id)
     print("Student " + str(student.id) + " predicted succesfully.")
+
+def saveModelTree(student):    
+    modelNumber = model_number(student)
+    modelName = model_name(modelNumber, student)
+    modelFile = retrieve_model(modelName)
+    
+    if modelFile is None:
+        return
+
+    studentMap = mapStudent(student, modelNumber)
+    prediction = modelFile.predict([studentMap])[0]
+    
+    savePredictionTree(student.id, [studentMap], modelName, prediction)
+    print("Model Tree " + str(student.id) + " saved succesfully.")
 
 def model_base_query():
   return '''
@@ -308,3 +332,26 @@ def completed_survey(student):
 
 def has_logs(student):
     return student.AccessCount is not None
+
+
+def getModelTree(courseDetailId, modelName):
+  filePath = ""
+  if courseDetailId is not None:
+    createPredictionTree(courseDetailId)
+    filePath = "models_output/{0}_predictionTree.png".format(courseDetailId)
+  elif modelName is not None:
+    filePath = "models_output/{0}.png".format(modelName)  
+
+  try:
+    image_data = open(filePath, "rb").read()
+    return HttpResponse(image_data, content_type="image/png")
+  except:
+    return HttpResponse("", content_type="text")
+
+def createPredictionTree(courseDetailId):
+    filePath = 'models_output/' + str(courseDetailId) + '_predictionTree.png'
+    if os.path.exists(filePath):
+        return
+    student = fetchStudentData(courseDetailId)
+    if student is not None:
+        saveModelTree(student)
