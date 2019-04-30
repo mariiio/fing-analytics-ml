@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
-import graphviz
 import pickle
 import os
 import django.utils.timezone as tz
-
 from joblib import Parallel, delayed
-import multiprocessing as mp
-
 from django.http import JsonResponse, HttpResponse
-
 from sklearn import tree, metrics
+
 from students_predictions.models import *
 from treebuilder import exportTree, savePredictionTree, deletePredictionTree
 
@@ -181,17 +177,9 @@ def train():
 def predict():
     baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is null")
-    
-    # Create pool
-    c = mp.cpu_count()
-    pool = mp.Pool(c)
-
-    # Call parallel for
-    results = [pool.apply_async(saveStudentPrediction, args=(student,)) for student in students]
-
-    # Wait for all threads to finish
-    pool.close()
-    pool.join()
+      
+    for student in students:
+        saveStudentPrediction(student)
 
 def fetchStudentData(courseDetailId):
     baseQuery = model_base_query()
@@ -299,7 +287,7 @@ def retrieve_model(model_name):
 def model_number(student):
     if student.Assignment4:
         return 4
-    elif student.Assignment3:
+    elif student.Test1 and student.Assignment3:
         return 3
     elif student.Test1:
         return 2
