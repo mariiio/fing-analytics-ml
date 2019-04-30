@@ -1,19 +1,15 @@
 # -*- coding: utf-8 -*-
-import graphviz
 import pickle
 import os
 import django.utils.timezone as tz
-
 from joblib import Parallel, delayed
-import multiprocessing as mp
-
 from django.http import JsonResponse, HttpResponse
-
 from sklearn import tree, metrics
+
 from students_predictions.models import *
 from treebuilder import exportTree, savePredictionTree, deletePredictionTree
 
-def mapStudent(student, model_number):
+def mapStudent(student, model_number, model_name):
     maped_student = [
         mapAssignment(student.Assignment1),
         mapAssignment(student.Assignment2)
@@ -25,9 +21,9 @@ def mapStudent(student, model_number):
     if model_number > 3:
         maped_student = maped_student + [mapAssignment(student.Assignment4)]
 
-    if has_logs(student):
+    if has_logs(student) and 'Logs' in model_name:
         maped_student = maped_student + mapLogs(student)
-    if completed_survey(student):
+    if completed_survey(student) and 'Survey' in model_name:
         maped_student = maped_student + mapSurvey(student)
 
     return maped_student
@@ -156,19 +152,18 @@ def train():
     
     for student in students:
         for model_number in range(1, 5):
-            modelName = model_name(model_number, student)
-
-            studentMap = mapStudent(student, model_number)
-            if x_train_dict.has_key(modelName):
-                x_train_dict[modelName].append(studentMap)
-            else:
-                x_train_dict[modelName] = [studentMap]
-
+            modelNameList = model_name_list(model_number, student)
             resultMap = mapFinalResult(student.Final)
-            if y_train_dict.has_key(modelName):
-                y_train_dict[modelName].append(resultMap)
-            else:
-                y_train_dict[modelName] = [resultMap]
+            for modelName in modelNameList:
+                studentMap = mapStudent(student, model_number, modelName)
+                if x_train_dict.has_key(modelName):
+                    x_train_dict[modelName].append(studentMap)
+                else:
+                    x_train_dict[modelName] = [studentMap]
+                if y_train_dict.has_key(modelName):
+                    y_train_dict[modelName].append(resultMap)
+                else:
+                    y_train_dict[modelName] = [resultMap]
 
     for modelName in x_train_dict.keys():
         trainModel = x_train_dict[modelName]
@@ -178,20 +173,23 @@ def train():
             exportTree(modelName)
             print("Model " + modelName  + " trained succesfully")
 
+def model_name_list(model_number, student):
+    name = 'Model{0}'.format(model_number)
+    models_list = [name]
+    if has_logs(student):
+        models_list.append(name + 'Logs')
+    if completed_survey(student):
+        models_list.append(name + 'Survey')
+    if has_logs(student) and completed_survey(student):
+        models_list.append(name + 'Logs' + 'Survey')
+    return models_list
+
 def predict():
     baseQuery = model_base_query()
     students = Student.objects.raw(baseQuery + " and grades.Final is null")
-    
-    # Create pool
-    c = mp.cpu_count()
-    pool = mp.Pool(c)
-
-    # Call parallel for
-    results = [pool.apply_async(saveStudentPrediction, args=(student,)) for student in students]
-
-    # Wait for all threads to finish
-    pool.close()
-    pool.join()
+      
+    for student in students:
+        saveStudentPrediction(student)
 
 def fetchStudentData(courseDetailId):
     baseQuery = model_base_query()
@@ -208,7 +206,7 @@ def saveStudentPrediction(student):
     if modelFile is None:
         return
 
-    studentMap = mapStudent(student, modelNumber)
+    studentMap = mapStudent(student, modelNumber, modelName)
     prediction = modelFile.predict([studentMap])[0]
     predictionResult = {2: 'FAIL', 1: 'EXAM', 0: 'PASS'}[prediction]
 
@@ -225,7 +223,7 @@ def saveModelTree(student):
     if modelFile is None:
         return
 
-    studentMap = mapStudent(student, modelNumber)
+    studentMap = mapStudent(student, modelNumber, modelName)
     prediction = modelFile.predict([studentMap])[0]
     
     savePredictionTree(student.id, [studentMap], modelName, prediction)
@@ -299,7 +297,7 @@ def retrieve_model(model_name):
 def model_number(student):
     if student.Assignment4:
         return 4
-    elif student.Assignment3:
+    elif student.Test1 and student.Assignment3:
         return 3
     elif student.Test1:
         return 2
